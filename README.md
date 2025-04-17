@@ -344,10 +344,6 @@ All errors return an `ApiError` JSON object:
 
 ---
 
-> **Note:** All date fields use ISO-8601 format (`YYYY-MM-DD`). Price fields are serialized as strings to preserve decimal precision.
-
----
-
 ## Swagger / OpenAPI UI
 
 Interactive API documentation is available at:
