@@ -14,6 +14,36 @@ The in-memory H2 database is reset each time the application restarts.
 
 ---
 
+## Design & Documentation
+
+This section provides a high-level overview of the project's structure and key components:
+
+- **Controller Layer** (`RoomBooking.demo.Controller`):
+  - `RoomController` — handles `/rooms` endpoints (list, filter by availability, create rooms).
+  - `BookingController` — handles `/bookings` endpoints (create, cancel, retrieve bookings).
+
+- **Service Layer** (`RoomBooking.demo.Service` & `ServiceImpl`):
+  - Interfaces: `RoomService`, `BookingService` define business operations.
+  - Implementations (`RoomServiceImpl`, `BookingServiceImpl`) contain business logic and transaction management.
+
+- **Repository Layer** (`RoomBooking.demo.Repository`):
+  - `RoomRepository`, `BookingRepository` extend Spring Data JPA for CRUD operations.
+
+- **Entity Layer** (`RoomBooking.demo.Entity`):
+  - `Room`, `Booking` represent database tables, extend `BaseEntity` (auto-generated id, timestamps).
+
+- **DTO & Mapping** (`RoomBooking.demo.Extra.DTO`, `RoomBooking.demo.Mapper`):
+  - Data Transfer Objects (`RoomDTO`, `BookingDTO`) for requests/responses.
+  - MapStruct mappers (`RoomMapper`, `BookingMapper`) to convert between Entities and DTOs.
+
+- **Validation & Exception Handling** (`RoomBooking.demo.Extra`, `ExceptionHandling`):
+  - `BookingRequest` enforces request payload constraints (e.g., future dates).
+  - Custom exceptions (`NotFoundException`, `BusinessException`) with a global handler (`GlobalExceptionHandler`) returning `ApiError` responses.
+
+- **Persistence**: In-memory H2 database configured in `application.properties`. Schema and data are reset on each restart.
+
+- **API Documentation**: OpenAPI/Swagger UI automatically generated via SpringDoc, accessible at `/swagger-ui.html`.
+
 ## Technologies & Libraries
 
 - **Java**: version 17
@@ -109,7 +139,7 @@ Base URL: `http://localhost:8080`
 
 #### GET `/rooms`
 
-- **Query Parameters**:
+- **Query Parameters (params)**:
   - `available` (Boolean, optional): filter by availability (`true` or `false`). If omitted, returns all rooms.
 - **Responses**:
   - `200 OK` – JSON array of `RoomDTO`
@@ -118,11 +148,11 @@ Base URL: `http://localhost:8080`
 ```json
 [
   {
-    "id": 1  //Long,
-    "roomNumber": "101A"  //String,
-    "capacity": 2 //int,
-    "pricePerNight": 99.99 //BigDecimal,
-    "available": true //Boolean 
+    "id": 1,
+    "roomNumber": "101A",
+    "capacity": 2,
+    "pricePerNight": "99.99",
+    "available": true
   }
 ]
 ```
@@ -252,6 +282,35 @@ Base URL: `http://localhost:8080`
 
 ---
 
+## Example curl Commands
+
+```bash
+# List all available rooms
+curl -X GET "http://localhost:8080/rooms?available=true" -H "Accept: application/json"
+
+# Create a new room
+curl -X POST "http://localhost:8080/rooms" -H "Content-Type: application/json" -d '{
+  "roomNumber": "202B",
+  "capacity": 3,
+  "pricePerNight": "150.00",
+  "available": true
+}'
+
+# Make a booking
+curl -X POST "http://localhost:8080/bookings" -H "Content-Type: application/json" -d '{
+  "roomId": 1,
+  "customerName": "John Doe",
+  "checkIn": "2025-05-01",
+  "checkOut": "2025-05-05"
+}'
+
+# Cancel a booking
+curl -X PUT "http://localhost:8080/bookings/10/cancel" -H "Accept: application/json"
+
+# Get booking details
+curl -X GET "http://localhost:8080/bookings/10" -H "Accept: application/json"
+```
+
 ## Error Handling
 
 All errors return an `ApiError` JSON object:
@@ -282,6 +341,10 @@ All errors return an `ApiError` JSON object:
 | `customerName`    | String   | string                           |
 | `checkIn`, `checkOut` | LocalDate | string in `YYYY-MM-DD` format |
 | `status`          | enum     | string (`"CONFIRMED"`, `"CANCELLED"`)
+
+---
+
+> **Note:** All date fields use ISO-8601 format (`YYYY-MM-DD`). Price fields are serialized as strings to preserve decimal precision.
 
 ---
 
